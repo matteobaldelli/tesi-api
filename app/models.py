@@ -1,4 +1,5 @@
 from app import db
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class Medical(db.Model):
@@ -33,9 +34,6 @@ class Medical(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    # def __repr__(self):
-    #     return "<Medical: {}>".format(self.name)
-
 
 class Visit(db.Model):
     __tablename__ = 'visit'
@@ -48,9 +46,12 @@ class Visit(db.Model):
         default=db.func.current_timestamp(),
         onupdate=db.func.current_timestamp()
     )
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user = db.relationship('User', backref=db.backref('visits', lazy=True))
 
-    def __init__(self, name):
+    def __init__(self, name, user):
         self.name = name
+        self.user = user
 
     def save(self):
         db.session.add(self)
@@ -63,3 +64,29 @@ class Visit(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(32), index=True)
+    password_hash = db.Column(db.String(128))
+    date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
+    date_modified = db.Column(
+        db.DateTime,
+        default=db.func.current_timestamp(),
+        onupdate=db.func.current_timestamp()
+    )
+
+    def __init__(self, username):
+        self.username = username
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def hash_password(self, password):
+        self.password_hash = generate_password_hash(password, method='sha256')
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
