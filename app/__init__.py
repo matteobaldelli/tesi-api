@@ -218,12 +218,12 @@ def create_app(config_name):
             username = request.json['username']
             password = request.json['password']
         except BadRequest:
-            return {}, 401
+            return {}, 400
 
         user = User.query.filter_by(username=username).first()
 
         if not user:
-            return {}, 401
+            return {}, 400
 
         if user.check_password(password):
             token = jwt.encode(
@@ -236,7 +236,7 @@ def create_app(config_name):
 
             return jsonify({'access_token': token.decode('UTF-8')})
 
-        return {}, 401
+        return {}, 403
 
     return app
 
