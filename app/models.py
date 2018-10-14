@@ -71,6 +71,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
+    gender = db.Column(db.String(255))
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
     date_modified = db.Column(
         db.DateTime,
@@ -78,8 +79,9 @@ class User(db.Model):
         onupdate=db.func.current_timestamp()
     )
 
-    def __init__(self, username):
+    def __init__(self, username, gender):
         self.username = username
+        self.gender = gender
 
     def save(self):
         db.session.add(self)
@@ -90,3 +92,39 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class Metric(db.Model):
+    __tablename__ = 'metrics'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    weight = db.Column(db.Integer)
+    unit_label = db.Column(db.String(255))
+    total_range_min = db.Column(db.Integer)
+    total_range_max = db.Column(db.Integer)
+    healthy_range_min = db.Column(db.Integer)
+    healthy_range_max = db.Column(db.Integer)
+    gender = db.Column(db.String(255))
+
+    def __init__(self, name, weight, unit_label, total_range_min, total_range_max, healthy_range_min,
+                 healthy_range_max, gender):
+        self.name = name
+        self.weight = weight
+        self.unit_label = unit_label
+        self.total_range_min = total_range_min
+        self.total_range_max = total_range_max
+        self.healthy_range_min = healthy_range_min
+        self.healthy_range_max = healthy_range_max
+        self.gender = gender
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_all():
+        return Metric.query.all()
