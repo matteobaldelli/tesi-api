@@ -110,7 +110,7 @@ class Metric(db.Model):
     category = db.relationship('Category', backref=db.backref('metrics', lazy=True))
 
     def __init__(self, name, weight, unit_label, total_range_min, total_range_max, healthy_range_min,
-                 healthy_range_max, gender, category):
+                 healthy_range_max, gender):
         self.name = name
         self.weight = weight
         self.unit_label = unit_label
@@ -119,7 +119,6 @@ class Metric(db.Model):
         self.healthy_range_min = healthy_range_min
         self.healthy_range_max = healthy_range_max
         self.gender = gender
-        self.category = category
 
     def save(self):
         db.session.add(self)
