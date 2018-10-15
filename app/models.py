@@ -106,9 +106,11 @@ class Metric(db.Model):
     healthy_range_min = db.Column(db.Integer)
     healthy_range_max = db.Column(db.Integer)
     gender = db.Column(db.String(255))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
+    category = db.relationship('Category', backref=db.backref('metrics', lazy=True))
 
     def __init__(self, name, weight, unit_label, total_range_min, total_range_max, healthy_range_min,
-                 healthy_range_max, gender):
+                 healthy_range_max, gender, category):
         self.name = name
         self.weight = weight
         self.unit_label = unit_label
@@ -117,6 +119,7 @@ class Metric(db.Model):
         self.healthy_range_min = healthy_range_min
         self.healthy_range_max = healthy_range_max
         self.gender = gender
+        self.category = category
 
     def save(self):
         db.session.add(self)
@@ -129,3 +132,24 @@ class Metric(db.Model):
     @staticmethod
     def get_all():
         return Metric.query.all()
+
+
+class Category(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+
+    def __init__(self, name):
+        self.name = name
+
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def get_all():
+        return Category.query.all()

@@ -18,7 +18,7 @@ db = SQLAlchemy()
 
 
 def create_app(config_name):
-    from app.models import Medical, Visit, User, Metric
+    from app.models import Medical, Visit, User, Metric, Category
 
     app = FlaskAPI(__name__, instance_relative_config=True)
     cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -51,7 +51,8 @@ def create_app(config_name):
         return decorated
 
     @app.route('/medical', methods=['POST', 'GET'])
-    def medical():
+    @token_required
+    def medical(user):
         if request.method == 'POST':
             medical = Medical(
                 metric=str(request.data.get('metric', '')),
@@ -203,6 +204,7 @@ def create_app(config_name):
     @token_required
     def metric(user):
         if request.method == 'POST':
+            category = Category.query.filter_by(id=request.data.get('category_id', None)).first()
             metric = Metric(
                 name=str(request.data['name']),
                 weight=request.data['weight'],
@@ -211,7 +213,8 @@ def create_app(config_name):
                 total_range_max=request.data['total_range_max'],
                 healthy_range_min=request.data['healthy_range_min'],
                 healthy_range_max=request.data['healthy_range_max'],
-                gender=request.data['gender']
+                gender=request.data['gender'],
+                category=category
             )
             metric.save()
             response = jsonify({
@@ -223,7 +226,8 @@ def create_app(config_name):
                 'total_range_max': metric.total_range_max,
                 'healthy_range_min': metric.healthy_range_min,
                 'healthy_range_max': metric.healthy_range_max,
-                'gender': metric.gender
+                'gender': metric.gender,
+                'category_id': None if metric.category is None else metric.category.id
             })
             response.status_code = 201
             return response
@@ -242,7 +246,8 @@ def create_app(config_name):
                     'total_range_max': metric.total_range_max,
                     'healthy_range_min': metric.healthy_range_min,
                     'healthy_range_max': metric.healthy_range_max,
-                    'gender': metric.gender
+                    'gender': metric.gender,
+                    'category_id': None if metric.category is None else metric.category.id
                 }
                 results.append(obj)
             response = jsonify(results)
@@ -281,7 +286,8 @@ def create_app(config_name):
                 'total_range_max': metric.total_range_max,
                 'healthy_range_min': metric.healthy_range_min,
                 'healthy_range_max': metric.healthy_range_max,
-                'gender': metric.gender
+                'gender': metric.gender,
+                'category_id': None if metric.category is None else metric.category.id
             })
             response.status_code = 200
             return response
@@ -289,13 +295,15 @@ def create_app(config_name):
             # GET
             response = jsonify({
                 'id': metric.id,
+                'name': metric.name,
                 'weight': metric.weight,
                 'unit_label': metric.unit_label,
                 'total_range_min': metric.total_range_min,
                 'total_range_max': metric.total_range_max,
                 'healthy_range_min': metric.healthy_range_min,
                 'healthy_range_max': metric.healthy_range_max,
-                'gender': metric.gender
+                'gender': metric.gender,
+                'category_id': None if metric.category is None else metric.category.id
             })
             response.status_code = 200
             return response
@@ -303,8 +311,33 @@ def create_app(config_name):
     @app.route('/metric/data', methods=['GET'])
     @token_required
     def metric_data(user):
-        metrics = Metric.query.filter_by(gender=user.gender)
         results = []
+        categories = Category.get_all()
+        for category in categories:
+            obj_category = {
+                'name': category.name,
+                'details': []
+            }
+            for metric in category.metrics:
+                obj = {
+                    'name': metric.name,
+                    'weight': metric.weight,
+                    'unit_label': metric.unit_label,
+                    'features': {
+                        'totalrange': [
+                            metric.total_range_min,
+                            metric.total_range_max
+                        ],
+                        'healthyrange': [
+                            metric.healthy_range_min,
+                            metric.healthy_range_max
+                        ]
+                    }
+                }
+                obj_category['details'].append(obj)
+            results.append(obj_category)
+
+        metrics = Metric.query.filter_by(gender=user.gender, category=None)
 
         for metric in metrics:
             obj = {
@@ -312,11 +345,11 @@ def create_app(config_name):
                 'weight': metric.weight,
                 'unit_label': metric.unit_label,
                 'features': {
-                    'healthyrange': [
+                    'totalrange': [
                         metric.total_range_min,
                         metric.total_range_max
                     ],
-                    'totalrange': [
+                    'healthyrange': [
                         metric.healthy_range_min,
                         metric.healthy_range_max
                     ]
@@ -327,6 +360,64 @@ def create_app(config_name):
         response = jsonify(results)
         response.status_code = 200
         return response
+
+    @app.route('/category', methods=['POST', 'GET'])
+    @token_required
+    def category(user):
+        if request.method == 'POST':
+            category = Category(name=str(request.data['name']))
+            category.save()
+            response = jsonify({
+                'id': category.id,
+                'name': category.name
+            })
+            response.status_code = 201
+            return response
+        else:
+            # GET
+            categories = Category.get_all()
+            results = []
+
+            for category in categories:
+                obj = {
+                    'id': category.id,
+                    'name': category.name
+                }
+                results.append(obj)
+            response = jsonify(results)
+            response.status_code = 200
+            return response
+
+    @app.route('/category/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    def category_details(id, **kwargs):
+        category = Category.query.filter_by(id=id).first()
+        if not category:
+            # Raise an HTTPException with a 404 not found status code
+            abort(404)
+
+        if request.method == 'DELETE':
+            category.delete()
+            return {
+                       "message": "category {} deleted successfully".format(category.id)
+                   }, 200
+
+        elif request.method == 'PUT':
+            category.name = str(request.data.get('name', category.name))
+            category.save()
+            response = jsonify({
+                'id': category.id,
+                'name': category.name
+            })
+            response.status_code = 200
+            return response
+        else:
+            # GET
+            response = jsonify({
+                'id': category.id,
+                'name': category.name,
+            })
+            response.status_code = 200
+            return response
 
     @app.route('/user', methods=['POST'])
     def new_user():
