@@ -1,6 +1,6 @@
 import datetime
 import jwt
-from jwt import DecodeError
+from jwt import DecodeError, ExpiredSignatureError
 from six import wraps
 
 from flask_api import FlaskAPI
@@ -42,6 +42,8 @@ def create_app(config_name):
             except DecodeError:
                 return jsonify({'message': 'Token is invalid!'}), 401
             except NoResultFound:
+                return jsonify({'message': 'Token is invalid!'}), 401
+            except ExpiredSignatureError:
                 return jsonify({'message': 'Token is invalid!'}), 401
 
             return f(current_user, *args, **kwargs)
