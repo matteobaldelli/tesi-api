@@ -15,7 +15,7 @@ class Medical(db.Model):
         onupdate=db.func.current_timestamp()
     )
     visit_id = db.Column(db.Integer, db.ForeignKey('visit.id'), nullable=False)
-    visit = db.relationship('Visit', backref=db.backref('medicals', lazy=True))
+    visit = db.relationship('Visit', back_populates='medicals')
 
     def __init__(self, metric, value, visit):
         self.metric = metric
@@ -48,6 +48,7 @@ class Visit(db.Model):
     )
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('visits', lazy=True))
+    medicals = db.relationship('Medical', back_populates='visit', cascade="all, delete-orphan")
 
     def __init__(self, name, user):
         self.name = name
