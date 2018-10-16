@@ -48,7 +48,7 @@ class Visit(db.Model):
     )
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('visits', lazy=True))
-    medicals = db.relationship('Medical', back_populates='visit', cascade="all, delete-orphan")
+    medicals = db.relationship('Medical', back_populates='visit', cascade='all, delete-orphan')
 
     def __init__(self, name, user):
         self.name = name
@@ -108,7 +108,7 @@ class Metric(db.Model):
     healthy_range_max = db.Column(db.Integer)
     gender = db.Column(db.String(255))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
-    category = db.relationship('Category', backref=db.backref('metrics', lazy=True))
+    category = db.relationship('Category', back_populates='metrics')
 
     def __init__(self, name, weight, unit_label, total_range_min, total_range_max, healthy_range_min,
                  healthy_range_max, gender):
@@ -138,6 +138,7 @@ class Category(db.Model):
     __tablename__ = 'categories'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
+    metrics = db.relationship('Metric', back_populates='category', cascade='save-update')
 
     def __init__(self, name):
         self.name = name
