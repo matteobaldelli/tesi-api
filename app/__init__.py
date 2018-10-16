@@ -204,7 +204,7 @@ def create_app(config_name):
     @token_required
     def metric(user):
         if request.method == 'POST':
-            category = request.data.get('category_id', None)
+            category_id = request.data.get('category_id', None)
 
             metric = Metric(
                 name=str(request.data['name']),
@@ -214,13 +214,13 @@ def create_app(config_name):
                 total_range_max=request.data['total_range_max'],
                 healthy_range_min=request.data['healthy_range_min'],
                 healthy_range_max=request.data['healthy_range_max'],
-                gender=request.data['gender'],
+                gender=str(request.data['gender']),
             )
             try:
-                category = Category.query.filter_by(id=category).first()
+                category = Category.query.filter_by(id=category_id).first()
                 metric.category = category
             except:
-                pass
+                db.session.rollback()
             metric.save()
             response = jsonify({
                 'id': metric.id,
