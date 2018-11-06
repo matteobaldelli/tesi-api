@@ -2,11 +2,10 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class Medical(db.Model):
-    __tablename__ = 'medical'
+class Exam(db.Model):
+    __tablename__ = 'exams'
 
     id = db.Column(db.Integer, primary_key=True)
-    metric = db.Column(db.String(255))
     value = db.Column(db.Integer)
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
     date_modified = db.Column(
@@ -14,8 +13,10 @@ class Medical(db.Model):
         default=db.func.current_timestamp(),
         onupdate=db.func.current_timestamp()
     )
-    visit_id = db.Column(db.Integer, db.ForeignKey('visit.id'), nullable=False)
-    visit = db.relationship('Visit', back_populates='medicals')
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False)
+    visit = db.relationship('Visit', back_populates='exams')
+    metric_id = db.Column(db.Integer, db.ForeignKey('metrics.id'), nullable=False)
+    metric = db.relationship('Metric', back_populates='exams')
 
     def __init__(self, metric, value, visit):
         self.metric = metric
@@ -28,7 +29,7 @@ class Medical(db.Model):
 
     @staticmethod
     def get_all():
-        return Medical.query.all()
+        return Exam.query.all()
 
     def delete(self):
         db.session.delete(self)
@@ -36,7 +37,7 @@ class Medical(db.Model):
 
 
 class Visit(db.Model):
-    __tablename__ = 'visit'
+    __tablename__ = 'visits'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
@@ -48,7 +49,7 @@ class Visit(db.Model):
     )
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     user = db.relationship('User', backref=db.backref('visits', lazy=True))
-    medicals = db.relationship('Medical', back_populates='visit', cascade='all, delete-orphan')
+    exams = db.relationship('Exam', back_populates='visit', cascade='all, delete-orphan')
 
     def __init__(self, name, user):
         self.name = name
@@ -109,6 +110,7 @@ class Metric(db.Model):
     gender = db.Column(db.String(255))
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True)
     category = db.relationship('Category', back_populates='metrics')
+    exams = db.relationship('Exam', back_populates='metric', cascade='all, delete-orphan')
 
     def __init__(self, name, weight, unit_label, total_range_min, total_range_max, healthy_range_min,
                  healthy_range_max, gender):
