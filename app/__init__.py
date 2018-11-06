@@ -151,8 +151,10 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            # GET
-            visits = Visit.query.filter_by(user=user)
+            if user.admin:
+                visits = Visit.query.filter_by()
+            else:
+                visits = Visit.query.filter_by(user=user)
             results = []
 
             for visit in visits:
@@ -160,7 +162,8 @@ def create_app(config_name):
                     'id': visit.id,
                     'name': visit.name,
                     'dateCreated': visit.date_created,
-                    'dateModified': visit.date_modified
+                    'dateModified': visit.date_modified,
+                    'userUsername': visit.user.username
                 }
                 results.append(obj)
             response = jsonify(results)
