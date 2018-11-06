@@ -206,16 +206,16 @@ def create_app(config_name):
     @token_required
     def metric(user):
         if request.method == 'POST':
-            category_id = request.data.get('category_id', None)
+            category_id = request.data.get('categoryId', None)
 
             metric = Metric(
                 name=str(request.data['name']),
                 weight=request.data['weight'],
-                unit_label=str(request.data['unit_label']),
-                total_range_min=request.data['total_range_min'],
-                total_range_max=request.data['total_range_max'],
-                healthy_range_min=request.data['healthy_range_min'],
-                healthy_range_max=request.data['healthy_range_max'],
+                unit_label=str(request.data['unitLabel']),
+                total_range_min=request.data['totalRangeMin'],
+                total_range_max=request.data['totalRangeMax'],
+                healthy_range_min=request.data['healthyRangeMin'],
+                healthy_range_max=request.data['healthyRangeMax'],
                 gender=str(request.data['gender']),
             )
             try:
@@ -228,13 +228,14 @@ def create_app(config_name):
                 'id': metric.id,
                 'name': metric.name,
                 'weight': metric.weight,
-                'unit_label': metric.unit_label,
-                'total_range_min': metric.total_range_min,
-                'total_range_max': metric.total_range_max,
-                'healthy_range_min': metric.healthy_range_min,
-                'healthy_range_max': metric.healthy_range_max,
+                'unitLabel': metric.unit_label,
+                'totalRangeMin': metric.total_range_min,
+                'totalRangeMax': metric.total_range_max,
+                'healthyRangeMin': metric.healthy_range_min,
+                'healthyRangeMax': metric.healthy_range_max,
                 'gender': metric.gender,
-                'category_id': None if metric.category is None else metric.category.id
+                'categoryId': None if metric.category is None else metric.category.id,
+                'categoryName': None if metric.category is None else metric.category.name
             })
             response.status_code = 201
             return response
@@ -248,13 +249,14 @@ def create_app(config_name):
                     'id': metric.id,
                     'name': metric.name,
                     'weight': metric.weight,
-                    'unit_label': metric.unit_label,
-                    'total_range_min': metric.total_range_min,
-                    'total_range_max': metric.total_range_max,
-                    'healthy_range_min': metric.healthy_range_min,
-                    'healthy_range_max': metric.healthy_range_max,
+                    'unitLabel': metric.unit_label,
+                    'totalRangeMin': metric.total_range_min,
+                    'totalRangeMax': metric.total_range_max,
+                    'healthyRangeMin': metric.healthy_range_min,
+                    'healthyRangeMax': metric.healthy_range_max,
                     'gender': metric.gender,
-                    'category_id': None if metric.category is None else metric.category.id
+                    'categoryId': None if metric.category is None else metric.category.id,
+                    'categoryName': None if metric.category is None else metric.category.name
                 }
                 results.append(obj)
             response = jsonify(results)
@@ -277,24 +279,25 @@ def create_app(config_name):
         elif request.method == 'PUT':
             metric.name = str(request.data.get('name', metric.name))
             metric.weight = request.data.get('weight', metric.weight)
-            metric.unit_label = str(request.data.get('unit_label', metric.unit_label))
-            metric.total_range_min = request.data.get('total_range_min', metric.total_range_min)
-            metric.total_range_max = request.data.get('total_range_min', metric.total_range_max)
-            metric.healthy_range_min = request.data.get('healthy_range_min', metric.healthy_range_min)
-            metric.healthy_range_max = request.data.get('healthy_range_max', metric.healthy_range_max)
+            metric.unit_label = str(request.data.get('unitLabel', metric.unit_label))
+            metric.total_range_min = request.data.get('totalRangeMin', metric.total_range_min)
+            metric.total_range_max = request.data.get('totalRangeMax', metric.total_range_max)
+            metric.healthy_range_min = request.data.get('healthyRangeMin', metric.healthy_range_min)
+            metric.healthy_range_max = request.data.get('healthyRangeMax', metric.healthy_range_max)
             metric.gender = request.data.get('gender', metric.gender)
             metric.save()
             response = jsonify({
                 'id': metric.id,
                 'name': metric.name,
                 'weight': metric.weight,
-                'unit_label': metric.unit_label,
-                'total_range_min': metric.total_range_min,
-                'total_range_max': metric.total_range_max,
-                'healthy_range_min': metric.healthy_range_min,
-                'healthy_range_max': metric.healthy_range_max,
+                'unitLabel': metric.unit_label,
+                'totalRangeMin': metric.total_range_min,
+                'totalRangeMax': metric.total_range_max,
+                'healthyRangeMin': metric.healthy_range_min,
+                'healthyRangeMax': metric.healthy_range_max,
                 'gender': metric.gender,
-                'category_id': None if metric.category is None else metric.category.id
+                'categoryId': None if metric.category is None else metric.category.id,
+                'categoryName': None if metric.category is None else metric.category.name
             })
             response.status_code = 200
             return response
@@ -304,13 +307,14 @@ def create_app(config_name):
                 'id': metric.id,
                 'name': metric.name,
                 'weight': metric.weight,
-                'unit_label': metric.unit_label,
-                'total_range_min': metric.total_range_min,
-                'total_range_max': metric.total_range_max,
-                'healthy_range_min': metric.healthy_range_min,
-                'healthy_range_max': metric.healthy_range_max,
+                'unitLabel': metric.unit_label,
+                'totalRangeMin': metric.total_range_min,
+                'totalRangeMax': metric.total_range_max,
+                'healthyRangeMin': metric.healthy_range_min,
+                'healthyRangeMax': metric.healthy_range_max,
                 'gender': metric.gender,
-                'category_id': None if metric.category is None else metric.category.id
+                'categoryId': None if metric.category is None else metric.category.id,
+                'categoryName': None if metric.category is None else metric.category.name
             })
             response.status_code = 200
             return response
