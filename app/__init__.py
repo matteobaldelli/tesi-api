@@ -18,7 +18,7 @@ db = SQLAlchemy()
 
 
 def create_app(config_name):
-    from app.models import Medical, Visit, User, Metric, Category
+    from app.models import Exam, Visit, User, Metric, Category
 
     app = FlaskAPI(__name__, instance_relative_config=True)
     cors = CORS(app, resources={r"/*": {"origins": "*"}})
@@ -50,88 +50,90 @@ def create_app(config_name):
 
         return decorated
 
-    @app.route('/medical', methods=['POST', 'GET'])
+    @app.route('/exams', methods=['POST', 'GET'])
     @token_required
-    def medical(user):
+    def exam(user):
         if request.method == 'POST':
-            medical = Medical(
-                metric=str(request.data.get('metric', '')),
+            exam = Exam(
                 value=request.data.get('value', 0),
-                visit=Visit.query.filter_by(id=request.data['visit_id']).first()
+                metric=Metric.query.filter_by(id=request.data['metricId']).first(),
+                visit=Visit.query.filter_by(id=request.data['visitId']).first()
             )
-            medical.save()
+            exam.save()
             response = jsonify({
-                'id': medical.id,
-                'metric': medical.metric,
-                'value': medical.value,
-                'date_created': medical.date_created,
-                'date_modified': medical.date_modified,
-                'visit_id': medical.visit.id
+                'id': exam.id,
+                'value': exam.value,
+                'dateCreated': exam.date_created,
+                'dateModified': exam.date_modified,
+                'visitId': exam.visit.id,
+                'metricId': exam.metric.id,
+                'metricName': exam.metric.name
             })
             response.status_code = 201
             return response
         else:
             # GET
-            medicals = Medical.query.filter_by(visit_id=request.values.get('visit_id', ''))
+            exams = Exam.query.filter_by(visit_id=request.values.get('visitId', ''))
 
             results = []
 
-            for medical in medicals:
+            for exam in exams:
                 obj = {
-                    'id': medical.id,
-                    'metric': medical.metric,
-                    'value': medical.value,
-                    'date_created': medical.date_created,
-                    'date_modified': medical.date_modified,
-                    'visit_id': medical.visit.id
+                    'id': exam.id,
+                    'value': exam.value,
+                    'dateCreated': exam.date_created,
+                    'dateModified': exam.date_modified,
+                    'visitId': exam.visit.id,
+                    'metricId': exam.metric.id,
+                    'metricName': exam.metric.name
                 }
                 results.append(obj)
             response = jsonify(results)
             response.status_code = 200
             return response
 
-    @app.route('/medical/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def medical_details(id, **kwargs):
-        medical = Medical.query.filter_by(id=id).first()
-        if not medical:
+    @app.route('/exams/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    def exam_details(id, **kwargs):
+        exam = Exam.query.filter_by(id=id).first()
+        if not exam:
             # Raise an HTTPException with a 404 not found status code
             abort(404)
 
         if request.method == 'DELETE':
-            medical.delete()
+            exam.delete()
             return {
-                       "message": "medical {} deleted successfully".format(medical.id)
+                       "message": "exam {} deleted successfully".format(exam.id)
                    }, 200
 
         elif request.method == 'PUT':
-            medical.metric = str(request.data.get('metric', medical.metric))
-            medical.value = request.data.get('value', medical.value)
-            medical.visit = Visit.query.filter_by(id=request.data.get('visit_id', medical.visit.id)).first()
-            medical.save()
+            exam.value = request.data.get('value', exam.value)
+            exam.metric = Metric.query.filter_by(id=request.data.get('metricId', exam.metric.id)).first()
+            exam.visit = Visit.query.filter_by(id=request.data.get('visitId', exam.visit.id)).first()
+            exam.save()
             response = jsonify({
-                'id': medical.id,
-                'metric': medical.metric,
-                'value': medical.value,
-                'date_created': medical.date_created,
-                'date_modified': medical.date_modified,
-                'visit_id': medical.visit.id
+                'id': exam.id,
+                'value': exam.value,
+                'dateCreated': exam.date_created,
+                'dateModified': exam.date_modified,
+                'metricId': exam.metric.id,
+                'visitId': exam.visit.id
             })
             response.status_code = 200
             return response
         else:
             # GET
             response = jsonify({
-                'id': medical.id,
-                'metric': medical.metric,
-                'value': medical.value,
-                'date_created': medical.date_created,
-                'date_modified': medical.date_modified,
-                'visit_id': medical.visit.id
+                'id': exam.id,
+                'value': exam.value,
+                'dateCreated': exam.date_created,
+                'dateModified': exam.date_modified,
+                'metricId': exam.metric.id,
+                'visitId': exam.visit.id
             })
             response.status_code = 200
             return response
 
-    @app.route('/visit', methods=['POST', 'GET'])
+    @app.route('/visits', methods=['POST', 'GET'])
     @token_required
     def visit(user):
         if request.method == 'POST':
@@ -143,8 +145,8 @@ def create_app(config_name):
             response = jsonify({
                 'id': visit.id,
                 'name': visit.name,
-                'date_created': visit.date_created,
-                'date_modified': visit.date_modified
+                'dateCreated': visit.date_created,
+                'dateModified': visit.date_modified
             })
             response.status_code = 201
             return response
@@ -157,15 +159,15 @@ def create_app(config_name):
                 obj = {
                     'id': visit.id,
                     'name': visit.name,
-                    'date_created': visit.date_created,
-                    'date_modified': visit.date_modified
+                    'dateCreated': visit.date_created,
+                    'dateModified': visit.date_modified
                 }
                 results.append(obj)
             response = jsonify(results)
             response.status_code = 200
             return response
 
-    @app.route('/visit/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    @app.route('/visits/<int:id>', methods=['GET', 'PUT', 'DELETE'])
     def visit_details(id, **kwargs):
         visit = Visit.query.filter_by(id=id).first()
         if not visit:
@@ -184,8 +186,8 @@ def create_app(config_name):
             response = jsonify({
                 'id': visit.id,
                 'name': visit.name,
-                'date_created': visit.date_created,
-                'date_modified': visit.date_modified
+                'dateCreated': visit.date_created,
+                'dateModified': visit.date_modified
             })
             response.status_code = 200
             return response
@@ -194,13 +196,13 @@ def create_app(config_name):
             response = jsonify({
                 'id': visit.id,
                 'name': visit.name,
-                'date_created': visit.date_created,
-                'date_modified': visit.date_modified
+                'dateCreated': visit.date_created,
+                'dateModified': visit.date_modified
             })
             response.status_code = 200
             return response
 
-    @app.route('/metric', methods=['POST', 'GET'])
+    @app.route('/metrics', methods=['POST', 'GET'])
     @token_required
     def metric(user):
         if request.method == 'POST':
@@ -259,7 +261,7 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
-    @app.route('/metric/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    @app.route('/metrics/<int:id>', methods=['GET', 'PUT', 'DELETE'])
     def metric_details(id, **kwargs):
         metric = Metric.query.filter_by(id=id).first()
         if not metric:
@@ -313,7 +315,7 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
-    @app.route('/metric/data', methods=['GET'])
+    @app.route('/metrics/data', methods=['GET'])
     @token_required
     def metric_data(user):
         results = []
@@ -366,7 +368,7 @@ def create_app(config_name):
         response.status_code = 200
         return response
 
-    @app.route('/category', methods=['POST', 'GET'])
+    @app.route('/categories', methods=['POST', 'GET'])
     @token_required
     def category(user):
         if request.method == 'POST':
@@ -393,7 +395,7 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
-    @app.route('/category/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    @app.route('/categories/<int:id>', methods=['GET', 'PUT', 'DELETE'])
     def category_details(id, **kwargs):
         category = Category.query.filter_by(id=id).first()
         if not category:
@@ -424,7 +426,7 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
-    @app.route('/user', methods=['POST'])
+    @app.route('/users', methods=['POST'])
     def new_user():
         try:
             username = request.json['username']
@@ -441,8 +443,8 @@ def create_app(config_name):
         return jsonify({
             'username': user.username,
             'gender': user.gender,
-            'date_created': user.date_created,
-            'date_modified': user.date_modified
+            'dateCreated': user.date_created,
+            'dateModified': user.date_modified
         }), 201
 
     @app.route('/login', methods=['POST'])
