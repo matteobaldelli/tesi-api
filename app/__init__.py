@@ -146,7 +146,8 @@ def create_app(config_name):
                 'id': visit.id,
                 'name': visit.name,
                 'dateCreated': visit.date_created,
-                'dateModified': visit.date_modified
+                'dateModified': visit.date_modified,
+                'userUsername': visit.user.username
             })
             response.status_code = 201
             return response
@@ -190,7 +191,8 @@ def create_app(config_name):
                 'id': visit.id,
                 'name': visit.name,
                 'dateCreated': visit.date_created,
-                'dateModified': visit.date_modified
+                'dateModified': visit.date_modified,
+                'userUsername': visit.user.username
             })
             response.status_code = 200
             return response
