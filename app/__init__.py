@@ -247,7 +247,7 @@ def create_app(config_name):
             return response
         else:
             # GET
-            gender = request.data.get('gender', None)
+            gender = request.values.get('gender', None)
             if gender is None:
                 metrics = Metric.get_all()
             else:
