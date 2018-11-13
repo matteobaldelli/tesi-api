@@ -202,7 +202,8 @@ def create_app(config_name):
                 'id': visit.id,
                 'name': visit.name,
                 'dateCreated': visit.date_created,
-                'dateModified': visit.date_modified
+                'dateModified': visit.date_modified,
+                'userGender': visit.user.gender
             })
             response.status_code = 200
             return response
@@ -246,7 +247,11 @@ def create_app(config_name):
             return response
         else:
             # GET
-            metrics = Metric.get_all()
+            gender = request.data.get('gender', None)
+            if gender is None:
+                metrics = Metric.get_all()
+            else:
+                metrics = Metric.query.filter_by(gender=gender)
             results = []
 
             for metric in metrics:
