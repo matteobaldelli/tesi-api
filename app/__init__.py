@@ -333,6 +333,7 @@ def create_app(config_name):
     @token_required
     def metric_data(user):
         results = []
+        gender = request.values.get('gender', user.gender)
         categories = Category.get_all()
         for category in categories:
             obj_category = {
@@ -340,25 +341,26 @@ def create_app(config_name):
                 'details': []
             }
             for metric in category.metrics:
-                obj = {
-                    'name': metric.name,
-                    'weight': metric.weight,
-                    'unit_label': metric.unit_label,
-                    'features': {
-                        'totalrange': [
-                            metric.total_range_min,
-                            metric.total_range_max
-                        ],
-                        'healthyrange': [
-                            metric.healthy_range_min,
-                            metric.healthy_range_max
-                        ]
+                if metric.gender == gender:
+                    obj = {
+                        'name': metric.name,
+                        'weight': metric.weight,
+                        'unit_label': metric.unit_label,
+                        'features': {
+                            'totalrange': [
+                                metric.total_range_min,
+                                metric.total_range_max
+                            ],
+                            'healthyrange': [
+                                metric.healthy_range_min,
+                                metric.healthy_range_max
+                            ]
+                        }
                     }
-                }
-                obj_category['details'].append(obj)
+                    obj_category['details'].append(obj)
             results.append(obj_category)
 
-        metrics = Metric.query.filter_by(gender=user.gender, category=None)
+        metrics = Metric.query.filter_by(gender=gender, category=None)
 
         for metric in metrics:
             obj = {
