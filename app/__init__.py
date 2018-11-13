@@ -358,7 +358,8 @@ def create_app(config_name):
                         }
                     }
                     obj_category['details'].append(obj)
-            results.append(obj_category)
+            if obj_category['details']:
+                results.append(obj_category)
 
         metrics = Metric.query.filter_by(gender=gender, category=None)
 
