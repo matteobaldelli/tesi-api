@@ -74,6 +74,7 @@ class User(db.Model):
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
     gender = db.Column(db.String(255))
+    birth_date = db.Column(db.DateTime)
     admin = db.Column(db.Boolean, default=False)
     date_created = db.Column(db.DateTime, default=db.func.current_timestamp())
     date_modified = db.Column(
@@ -82,9 +83,10 @@ class User(db.Model):
         onupdate=db.func.current_timestamp()
     )
 
-    def __init__(self, username, gender):
+    def __init__(self, username, gender, birth_date):
         self.username = username
         self.gender = gender
+        self.birth_date = birth_date
 
     def save(self):
         db.session.add(self)
