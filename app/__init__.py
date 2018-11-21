@@ -444,29 +444,30 @@ def create_app(config_name):
             return response
 
     @app.route('/users', methods=['POST'])
-    def new_user():
+    def user():
         try:
             username = request.json['username']
             password = request.json['password']
             gender = request.json['gender']
+            birth_date = request.json['birthDate']
         except BadRequest:
             return {}, 400
 
         if User.query.filter_by(username=username).first() is not None:
             return {}, 400
-        user = User(username=username, gender=gender)
+        user = User(username=username, gender=gender, birth_date=birth_date)
         user.hash_password(password)
         user.save()
         return jsonify({
             'username': user.username,
             'gender': user.gender,
+            'birthDate': user.birth_date,
             'dateCreated': user.date_created,
             'dateModified': user.date_modified
         }), 201
 
     @app.route('/login', methods=['POST'])
     def login():
-        # auth = request.authorization
         try:
             username = request.json['username']
             password = request.json['password']
