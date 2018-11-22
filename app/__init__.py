@@ -1,4 +1,6 @@
 import datetime
+import locale
+
 import jwt
 from jwt import DecodeError, ExpiredSignatureError
 from six import wraps
@@ -189,9 +191,9 @@ def create_app(config_name):
             return response
         else:
             if user.admin:
-                visits = Visit.query.filter_by()
+                visits = Visit.query.filter_by().order_by(Visit.date_created)
             else:
-                visits = Visit.query.filter_by(user=user)
+                visits = Visit.query.filter_by(user=user).order_by(Visit.date_created)
 
             results = []
             for visit in visits:
