@@ -8,8 +8,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import request, jsonify, abort
 from flask_cors import CORS
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.sql import func
+
 
 from werkzeug.exceptions import BadRequest
+from datetime import timedelta
 
 # local import
 from instance.config import app_config
@@ -133,6 +136,39 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
+    @app.route('/exams/statistics', methods=['GET'])
+    @token_required
+    def exam_statistics(user):
+        if user.admin is False:
+            return {}, 403
+        gender = request.values['gender']
+        filter_age = request.values['age'].split(',')
+        visits = Visit.get_all()
+        visit_id = []
+        for visit in visits:
+            age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
+            if visit.user.gender != gender:
+                pass
+            # if age <= filter_age[0] and age >= filter_age[1]:
+            if age <= filter_age[0] and age >= filter_age[1]:
+                pass
+            visit_id.append(visit.id)
+        avgs = Exam.query.with_entities(
+            Exam.metric_id, func.avg(Exam.value).label('avg')
+        ).filter(Exam.visit_id.in_(visit_id)).group_by(Exam.metric_id).all()
+
+        results = []
+        for avg in avgs:
+            metric = Metric.query.filter_by(id=avg[0]).first()
+            obj = {
+                'metricName': metric.name,
+                'value': int(avg[1])
+            }
+            results.append(obj)
+        response = jsonify(results)
+        response.status_code = 200
+        return response
+
     @app.route('/visits', methods=['POST', 'GET'])
     @token_required
     def visit(user):
@@ -156,8 +192,8 @@ def create_app(config_name):
                 visits = Visit.query.filter_by()
             else:
                 visits = Visit.query.filter_by(user=user)
-            results = []
 
+            results = []
             for visit in visits:
                 obj = {
                     'id': visit.id,
