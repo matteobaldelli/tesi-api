@@ -150,7 +150,7 @@ def create_app(config_name):
             if visit.user.gender != gender:
                 pass
             # if age <= filter_age[0] and age >= filter_age[1]:
-            if age <= filter_age[0] and age >= filter_age[1]:
+            if age <= int(filter_age[0]) and age >= int(filter_age[1]):
                 pass
             visit_id.append(visit.id)
         avgs = Exam.query.with_entities(
