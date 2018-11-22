@@ -1,5 +1,4 @@
 import datetime
-import locale
 
 import jwt
 from jwt import DecodeError, ExpiredSignatureError
@@ -14,7 +13,9 @@ from sqlalchemy.sql import func
 
 
 from werkzeug.exceptions import BadRequest
-from datetime import timedelta
+
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 # local import
 from instance.config import app_config
@@ -24,6 +25,11 @@ db = SQLAlchemy()
 
 def create_app(config_name):
     from app.models import Exam, Visit, User, Metric, Category
+
+    sentry_sdk.init(
+        dsn=app_config[config_name].SENTRY_URL,
+        integrations=[FlaskIntegration()]
+    )
 
     app = FlaskAPI(__name__, instance_relative_config=True)
     cors = CORS(app, resources={r"/*": {"origins": "*"}})
