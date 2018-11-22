@@ -150,10 +150,10 @@ def create_app(config_name):
         for visit in visits:
             age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
             if visit.user.gender != gender:
-                pass
+                continue
             # if age <= filter_age[0] and age >= filter_age[1]:
-            if age <= int(filter_age[0]) and age >= int(filter_age[1]):
-                pass
+            if age <= int(filter_age[0]) or age >= int(filter_age[1]):
+                continue
             visit_id.append(visit.id)
         avgs = Exam.query.with_entities(
             Exam.metric_id, func.avg(Exam.value).label('avg')
