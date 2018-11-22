@@ -7,11 +7,13 @@ class Config(object):
     CSRF_ENABLED = True
     SECRET = os.getenv('SECRET')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
+    SENTRY_URL = os.getenv('SENTRY_URL')
 
 
 class DevelopmentConfig(Config):
     """Configurations for Development."""
     DEBUG = True
+    SENTRY_URL = ''
 
 
 class TestingConfig(Config):
