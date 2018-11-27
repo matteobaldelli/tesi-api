@@ -26,6 +26,8 @@ db = SQLAlchemy()
 def create_app(config_name):
     from app.models import Exam, Visit, User, Metric, Category
 
+    print('ciaooneeeee!!!!!')
+    print(app_config[config_name].SENTRY_URL)
     sentry_sdk.init(
         dsn=app_config[config_name].SENTRY_URL,
         integrations=[FlaskIntegration()]
