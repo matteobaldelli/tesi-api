@@ -32,6 +32,7 @@ class ProductionConfig(Config):
     """Configurations for Production."""
     DEBUG = False
     TESTING = False
+    SENTRY_URL = os.getenv('SENTRY_URL')
 
 
 app_config = {
