@@ -147,36 +147,39 @@ def create_app(config_name):
     @app.route('/exams/statistics', methods=['GET'])
     @token_required
     def exam_statistics(user):
-        if user.admin is False:
-            return {}, 403
+        if user.admin:
+            visit_id = request.args.getlist('visits[]', type=int)
+            if not len(visit_id):
+                params = request.values.to_dict()
+                gender = params.pop('gender')
+                filter_age = params.pop('age').split(',')
+                visits = Visit.get_all()
+                visit_id = []
+                for visit in visits:
+                    age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
+                    if visit.user.gender != gender:
+                        continue
+                    if age < int(filter_age[0]) or age > int(filter_age[1]):
+                        continue
 
-        visit_id = request.args.getlist('visits[]', type=int)
-        if not len(visit_id):
-            params = request.values.to_dict()
-            gender = params.pop('gender')
-            filter_age = params.pop('age').split(',')
-            visits = Visit.get_all()
+                    exams = visit.exams
+                    good_visit = True
+                    for key, value in params.items():
+                        values = value.split(',')
+                        for exam in exams:
+                            if exam.metric.name == key:
+                                if exam.value < int(values[0]) or exam.value > int(values[1]):
+                                    good_visit = False
+                                    break
+                    if good_visit:
+                        visit_id.append(visit.id)
+                    if not params:
+                        visit_id.append(visit.id)
+        else:
             visit_id = []
+            visits = Visit.query.filter_by(user=user)
             for visit in visits:
-                age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
-                if visit.user.gender != gender:
-                    continue
-                if age < int(filter_age[0]) or age > int(filter_age[1]):
-                    continue
-
-                exams = visit.exams
-                good_visit = True
-                for key, value in params.items():
-                    values = value.split(',')
-                    for exam in exams:
-                        if exam.metric.name == key:
-                            if exam.value < int(values[0]) or exam.value > int(values[1]):
-                                good_visit = False
-                                break
-                if good_visit:
-                    visit_id.append(visit.id)
-                if not params:
-                    visit_id.append(visit.id)
+                visit_id.append(visit.id)
 
         avgs = Exam.query.with_entities(
             Exam.metric_id, func.avg(Exam.value).label('avg')
