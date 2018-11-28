@@ -100,7 +100,7 @@ class User(db.Model):
 
     @staticmethod
     def get_all():
-        return User.query.all()
+        return User.query.order_by(User.username).all()
 
 
 class Metric(db.Model):
