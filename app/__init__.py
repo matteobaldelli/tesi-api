@@ -150,31 +150,33 @@ def create_app(config_name):
         if user.admin is False:
             return {}, 403
 
-        params = request.values.to_dict()
-        gender = params.pop('gender')
-        filter_age = params.pop('age').split(',')
-        visits = Visit.get_all()
-        visit_id = []
-        for visit in visits:
-            age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
-            if visit.user.gender != gender:
-                continue
-            if age < int(filter_age[0]) or age > int(filter_age[1]):
-                continue
+        visit_id = request.args.getlist('visits[]', type=int)
+        if not len(visit_id):
+            params = request.values.to_dict()
+            gender = params.pop('gender')
+            filter_age = params.pop('age').split(',')
+            visits = Visit.get_all()
+            visit_id = []
+            for visit in visits:
+                age = (datetime.datetime.now() - visit.user.birth_date).days // 365.2425
+                if visit.user.gender != gender:
+                    continue
+                if age < int(filter_age[0]) or age > int(filter_age[1]):
+                    continue
 
-            exams = visit.exams
-            good_visit = True
-            for key, value in params.items():
-                values = value.split(',')
-                for exam in exams:
-                    if exam.metric.name == key:
-                        if exam.value < int(values[0]) or exam.value > int(values[1]):
-                            good_visit = False
-                            break
-            if good_visit:
-                visit_id.append(visit.id)
-            if not params:
-                visit_id.append(visit.id)
+                exams = visit.exams
+                good_visit = True
+                for key, value in params.items():
+                    values = value.split(',')
+                    for exam in exams:
+                        if exam.metric.name == key:
+                            if exam.value < int(values[0]) or exam.value > int(values[1]):
+                                good_visit = False
+                                break
+                if good_visit:
+                    visit_id.append(visit.id)
+                if not params:
+                    visit_id.append(visit.id)
 
         avgs = Exam.query.with_entities(
             Exam.metric_id, func.avg(Exam.value).label('avg')
@@ -212,10 +214,15 @@ def create_app(config_name):
             return response
         else:
             if user.admin:
-                visits = Visit.query.filter_by().order_by(Visit.date_created)
+                filter_user = request.values.get('user')
+                if filter_user is None:
+                    visits = Visit.query.filter_by()
+                else:
+                    visits = Visit.query.filter_by(user_id=filter_user)
             else:
-                visits = Visit.query.filter_by(user=user).order_by(Visit.date_created)
+                visits = Visit.query.filter_by(user=user)
 
+            visits = visits.order_by(Visit.date_created)
             results = []
             for visit in visits:
                 obj = {
@@ -223,7 +230,9 @@ def create_app(config_name):
                     'name': visit.name,
                     'dateCreated': visit.date_created,
                     'dateModified': visit.date_modified,
-                    'userUsername': visit.user.username
+                    'userUsername': visit.user.username,
+                    'userUsername': visit.user.username,
+                    'userGender': visit.user.gender
                 }
                 results.append(obj)
             response = jsonify(results)
@@ -251,7 +260,8 @@ def create_app(config_name):
                 'name': visit.name,
                 'dateCreated': visit.date_created,
                 'dateModified': visit.date_modified,
-                'userUsername': visit.user.username
+                'userUsername': visit.user.username,
+                'userGender': visit.user.gender
             })
             response.status_code = 200
             return response
@@ -262,6 +272,7 @@ def create_app(config_name):
                 'name': visit.name,
                 'dateCreated': visit.date_created,
                 'dateModified': visit.date_modified,
+                'userUsername': visit.user.username,
                 'userGender': visit.user.gender
             })
             response.status_code = 200
@@ -457,7 +468,6 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            # GET
             categories = Category.get_all()
             results = []
 
@@ -502,28 +512,44 @@ def create_app(config_name):
             response.status_code = 200
             return response
 
-    @app.route('/users', methods=['POST'])
+    @app.route('/users', methods=['POST', 'GET'])
     def user():
-        try:
-            username = request.json['username']
-            password = request.json['password']
-            gender = request.json['gender']
-            birth_date = request.json['birthDate']
-        except BadRequest:
-            return {}, 400
+        if request.method == 'POST':
+            try:
+                username = request.json['username']
+                password = request.json['password']
+                gender = request.json['gender']
+                birth_date = request.json['birthDate']
+            except BadRequest:
+                return {}, 400
 
-        if User.query.filter_by(username=username).first() is not None:
-            return {}, 400
-        user = User(username=username, gender=gender, birth_date=birth_date)
-        user.hash_password(password)
-        user.save()
-        return jsonify({
-            'username': user.username,
-            'gender': user.gender,
-            'birthDate': user.birth_date,
-            'dateCreated': user.date_created,
-            'dateModified': user.date_modified
-        }), 201
+            if User.query.filter_by(username=username).first() is not None:
+                return {}, 400
+            user = User(username=username, gender=gender, birth_date=birth_date)
+            user.hash_password(password)
+            user.save()
+            return jsonify({
+                'username': user.username,
+                'gender': user.gender,
+                'birthDate': user.birth_date,
+                'dateCreated': user.date_created,
+                'dateModified': user.date_modified
+            }), 201
+        else:
+            users = User.get_all()
+            results = []
+
+            for user in users:
+                obj = {
+                    'id': user.id,
+                    'username': user.username,
+                    'birthDate': user.birth_date,
+                    'dateCreated': user.date_created
+                }
+                results.append(obj)
+            response = jsonify(results)
+            response.status_code = 200
+            return response
 
     @app.route('/login', methods=['POST'])
     def login():
