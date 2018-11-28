@@ -98,6 +98,10 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    @staticmethod
+    def get_all():
+        return User.query.all()
+
 
 class Metric(db.Model):
     __tablename__ = 'metrics'
