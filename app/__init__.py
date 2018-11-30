@@ -83,7 +83,6 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            # GET
             exams = Exam.query.filter_by(visit_id=request.values.get('visitId', ''))
 
             results = []
@@ -280,6 +279,39 @@ def create_app(config_name):
             })
             response.status_code = 200
             return response
+
+    @app.route('/visits/exams', methods=['POST', 'GET'])
+    @token_required
+    def exam_group(user):
+        user_id = request.values.get('userId', '')
+        visits = Visit.query.filter_by(user_id=user_id)
+
+        results = []
+        for visit in visits:
+            result = {
+                'id': visit.id,
+                'name': visit.name,
+                'dateCreated': visit.date_created,
+                'dateModified': visit.date_modified,
+                'userUsername': visit.user.username,
+                'userGender': visit.user.gender,
+                'exams': []
+            }
+            for exam in visit.exams:
+                obj = {
+                    'id': exam.id,
+                    'value': exam.value,
+                    'dateCreated': exam.date_created,
+                    'dateModified': exam.date_modified,
+                    'visitId': exam.visit.id,
+                    'metricId': exam.metric.id,
+                    'metricName': exam.metric.name
+                }
+                result['exams'].append(obj)
+            results.append(result)
+        response = jsonify(results)
+        response.status_code = 200
+        return response
 
     @app.route('/metrics', methods=['POST', 'GET'])
     @token_required
@@ -546,6 +578,7 @@ def create_app(config_name):
                 obj = {
                     'id': user.id,
                     'username': user.username,
+                    'gender': user.gender,
                     'birthDate': user.birth_date,
                     'dateCreated': user.date_created
                 }
