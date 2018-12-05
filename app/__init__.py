@@ -65,11 +65,26 @@ def create_app(config_name):
     @token_required
     def exam(user):
         if request.method == 'POST':
-            exam = Exam(
-                value=request.data.get('value', 0),
-                metric=Metric.query.filter_by(id=request.data['metricId']).first(),
-                visit=Visit.query.filter_by(id=request.data['visitId']).first()
-            )
+            try:
+                metric_id = request.data['metricId']
+                visit_id = request.data['visitId']
+                value = request.data['value']
+            except KeyError:
+                return {}, 400
+
+            metric = Metric.query.filter_by(id=metric_id)
+            visit = Visit.query.filter_by(id=visit_id)
+
+            if not user.admin:
+                metric = metric.filter_by(gender=user.gender)
+                visit = visit.filter_by(user=user)
+
+            metric = metric.first()
+            visit = visit.first()
+            if visit is None or metric is None:
+                return {}, 400
+
+            exam = Exam(value=value, metric=metric, visit=visit)
             exam.save()
             response = jsonify({
                 'id': exam.id,
@@ -83,10 +98,21 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            exams = Exam.query.filter_by(visit_id=request.values.get('visitId', ''))
-
+            try:
+                visit_id = request.values['visitId']
+            except KeyError:
+                if user.admin:
+                    exams = Exam.get_all()
+                else:
+                    visit_ids = Visit.query.filter_by(user=user).with_entities(Visit.id)
+                    exams = Exam.query.filter(Exam.visit_id.in_(visit_ids))
+            else:
+                visit = Visit.query.filter_by(id=visit_id)
+                if not user.admin:
+                    visit = visit.filter_by(user=user)
+                visit = visit.first()
+                exams = Exam.query.filter_by(visit=visit)
             results = []
-
             for exam in exams:
                 obj = {
                     'id': exam.id,
