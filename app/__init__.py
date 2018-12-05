@@ -129,11 +129,15 @@ def create_app(config_name):
             return response
 
     @app.route('/exams/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def exam_details(id, **kwargs):
-        exam = Exam.query.filter_by(id=id).first()
-        if not exam:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def exam_details(user, id, **kwargs):
+        if user.admin:
+            exam = Exam.query.get_or_404(id)
+        else:
+            visit_ids = Visit.query.filter_by(user=user).with_entities(Visit.id)
+            exam = Exam.query.filter(Exam.visit_id.in_(visit_ids)).filter_by(id=id,).first()
+            if not exam:
+                abort(404)
 
         if request.method == 'DELETE':
             exam.delete()
@@ -143,8 +147,11 @@ def create_app(config_name):
 
         elif request.method == 'PUT':
             exam.value = request.data.get('value', exam.value)
-            exam.metric = Metric.query.filter_by(id=request.data.get('metricId', exam.metric.id)).first()
-            exam.visit = Visit.query.filter_by(id=request.data.get('visitId', exam.visit.id)).first()
+            # No control for authorization
+            # metric_id = request.data.get('metricId', exam.metric.id)
+            # visit_id = request.data.get('visitId', exam.visit.id)
+            # exam.metric = Metric.query.get(metric_id)
+            # exam.visit = Visit.query.get(visit_id)
             exam.save()
             response = jsonify({
                 'id': exam.id,
