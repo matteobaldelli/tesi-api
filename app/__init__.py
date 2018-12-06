@@ -535,8 +535,15 @@ def create_app(config_name):
     @app.route('/categories', methods=['POST', 'GET'])
     @token_required
     def category(user):
+        if not user.admin:
+            return {}, 403
         if request.method == 'POST':
-            category = Category(name=str(request.data['name']))
+            try:
+                name = str(request.data['name'])
+            except KeyError:
+                return {}, 400
+
+            category = Category(name=name)
             category.save()
             response = jsonify({
                 'id': category.id,
