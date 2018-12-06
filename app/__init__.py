@@ -616,7 +616,7 @@ def create_app(config_name):
 
             if User.query.filter_by(username=username).first() is not None:
                 return {}, 400
-            user = User(username=username, gender=gender, birth_date=birth_date)
+            user = User(username=username.lower(), gender=gender, birth_date=birth_date)
             user.hash_password(password)
             user.save()
             return jsonify({
@@ -651,7 +651,7 @@ def create_app(config_name):
         except BadRequest:
             return {}, 400
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(username=username.lower()).first()
 
         if not user:
             return {}, 400
