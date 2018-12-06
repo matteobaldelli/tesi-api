@@ -566,11 +566,11 @@ def create_app(config_name):
             return response
 
     @app.route('/categories/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def category_details(id, **kwargs):
-        category = Category.query.filter_by(id=id).first()
-        if not category:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def category_details(user, id, **kwargs):
+        if not user.admin:
+            return {}, 403
+        category = Category.query.get_or_404(id)
 
         if request.method == 'DELETE':
             category.delete()
@@ -588,7 +588,6 @@ def create_app(config_name):
             response.status_code = 200
             return response
         else:
-            # GET
             response = jsonify({
                 'id': category.id,
                 'name': category.name,
