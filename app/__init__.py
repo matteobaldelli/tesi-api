@@ -233,8 +233,13 @@ def create_app(config_name):
     @token_required
     def visit(user):
         if request.method == 'POST':
+            try:
+                name = str(request.data['name'])
+            except KeyError:
+                return {}, 400
+
             visit = Visit(
-                name=str(request.data.get('name', 'visit')),
+                name=name,
                 user=user
             )
             visit.save()
@@ -265,7 +270,6 @@ def create_app(config_name):
                     'name': visit.name,
                     'dateCreated': visit.date_created,
                     'dateModified': visit.date_modified,
-                    'userUsername': visit.user.username,
                     'userUsername': visit.user.username,
                     'userGender': visit.user.gender
                 }
