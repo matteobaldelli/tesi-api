@@ -65,11 +65,26 @@ def create_app(config_name):
     @token_required
     def exam(user):
         if request.method == 'POST':
-            exam = Exam(
-                value=request.data.get('value', 0),
-                metric=Metric.query.filter_by(id=request.data['metricId']).first(),
-                visit=Visit.query.filter_by(id=request.data['visitId']).first()
-            )
+            try:
+                metric_id = request.data['metricId']
+                visit_id = request.data['visitId']
+                value = request.data['value']
+            except KeyError:
+                return {}, 400
+
+            metric = Metric.query.filter_by(id=metric_id)
+            visit = Visit.query.filter_by(id=visit_id)
+
+            if not user.admin:
+                metric = metric.filter_by(gender=user.gender)
+                visit = visit.filter_by(user=user)
+
+            metric = metric.first()
+            visit = visit.first()
+            if visit is None or metric is None:
+                return {}, 400
+
+            exam = Exam(value=value, metric=metric, visit=visit)
             exam.save()
             response = jsonify({
                 'id': exam.id,
@@ -83,10 +98,21 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            exams = Exam.query.filter_by(visit_id=request.values.get('visitId', ''))
-
+            try:
+                visit_id = request.values['visitId']
+            except KeyError:
+                if user.admin:
+                    exams = Exam.get_all()
+                else:
+                    visit_ids = Visit.query.filter_by(user=user).with_entities(Visit.id)
+                    exams = Exam.query.filter(Exam.visit_id.in_(visit_ids))
+            else:
+                visit = Visit.query.filter_by(id=visit_id)
+                if not user.admin:
+                    visit = visit.filter_by(user=user)
+                visit = visit.first()
+                exams = Exam.query.filter_by(visit=visit)
             results = []
-
             for exam in exams:
                 obj = {
                     'id': exam.id,
@@ -103,11 +129,15 @@ def create_app(config_name):
             return response
 
     @app.route('/exams/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def exam_details(id, **kwargs):
-        exam = Exam.query.filter_by(id=id).first()
-        if not exam:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def exam_details(user, id, **kwargs):
+        if user.admin:
+            exam = Exam.query.get_or_404(id)
+        else:
+            visit_ids = Visit.query.filter_by(user=user).with_entities(Visit.id)
+            exam = Exam.query.filter(Exam.visit_id.in_(visit_ids)).filter_by(id=id,).first()
+            if not exam:
+                abort(404)
 
         if request.method == 'DELETE':
             exam.delete()
@@ -117,8 +147,11 @@ def create_app(config_name):
 
         elif request.method == 'PUT':
             exam.value = request.data.get('value', exam.value)
-            exam.metric = Metric.query.filter_by(id=request.data.get('metricId', exam.metric.id)).first()
-            exam.visit = Visit.query.filter_by(id=request.data.get('visitId', exam.visit.id)).first()
+            # No control for authorization
+            # metric_id = request.data.get('metricId', exam.metric.id)
+            # visit_id = request.data.get('visitId', exam.visit.id)
+            # exam.metric = Metric.query.get(metric_id)
+            # exam.visit = Visit.query.get(visit_id)
             exam.save()
             response = jsonify({
                 'id': exam.id,
@@ -200,8 +233,13 @@ def create_app(config_name):
     @token_required
     def visit(user):
         if request.method == 'POST':
+            try:
+                name = str(request.data['name'])
+            except KeyError:
+                return {}, 400
+
             visit = Visit(
-                name=str(request.data.get('name', 'visit')),
+                name=name,
                 user=user
             )
             visit.save()
@@ -233,7 +271,6 @@ def create_app(config_name):
                     'dateCreated': visit.date_created,
                     'dateModified': visit.date_modified,
                     'userUsername': visit.user.username,
-                    'userUsername': visit.user.username,
                     'userGender': visit.user.gender
                 }
                 results.append(obj)
@@ -242,11 +279,14 @@ def create_app(config_name):
             return response
 
     @app.route('/visits/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def visit_details(id, **kwargs):
-        visit = Visit.query.filter_by(id=id).first()
+    @token_required
+    def visit_details(user, id, **kwargs):
+        visit = Visit.query.filter_by(id=id)
+        if not user.admin:
+            visit = visit.filter_by(user=user)
+        visit = visit.first()
         if not visit:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+            return {}, 404
 
         if request.method == 'DELETE':
             visit.delete()
@@ -283,7 +323,9 @@ def create_app(config_name):
     @app.route('/visits/exams', methods=['POST', 'GET'])
     @token_required
     def exam_group(user):
-        user_id = request.values.get('userId', '')
+        if not user.admin:
+            return {}, 403
+        user_id = request.values.get('userId', user.id)
         visits = Visit.query.filter_by(user_id=user_id)
 
         results = []
@@ -317,6 +359,8 @@ def create_app(config_name):
     @token_required
     def metric(user):
         if request.method == 'POST':
+            if not user.admin:
+                return {}, 403
             category_id = request.data.get('categoryId', None)
 
             metric = Metric(
@@ -330,7 +374,7 @@ def create_app(config_name):
                 gender=str(request.data['gender']),
             )
             try:
-                category = Category.query.filter_by(id=category_id).first()
+                category = Category.query.get(category_id)
                 metric.category = category
             except:
                 db.session.rollback()
@@ -351,7 +395,6 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            # GET
             gender = request.values.get('gender', None)
             if gender is None:
                 metrics = Metric.get_all()
@@ -379,11 +422,11 @@ def create_app(config_name):
             return response
 
     @app.route('/metrics/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def metric_details(id, **kwargs):
-        metric = Metric.query.filter_by(id=id).first()
-        if not metric:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def metric_details(user, id, **kwargs):
+        if not user.admin:
+            return {}, 403
+        metric = Metric.query.get_or_404(id)
 
         if request.method == 'DELETE':
             metric.delete()
@@ -417,7 +460,6 @@ def create_app(config_name):
             response.status_code = 200
             return response
         else:
-            # GET
             response = jsonify({
                 'id': metric.id,
                 'name': metric.name,
@@ -493,8 +535,15 @@ def create_app(config_name):
     @app.route('/categories', methods=['POST', 'GET'])
     @token_required
     def category(user):
+        if not user.admin:
+            return {}, 403
         if request.method == 'POST':
-            category = Category(name=str(request.data['name']))
+            try:
+                name = str(request.data['name'])
+            except KeyError:
+                return {}, 400
+
+            category = Category(name=name)
             category.save()
             response = jsonify({
                 'id': category.id,
@@ -517,11 +566,11 @@ def create_app(config_name):
             return response
 
     @app.route('/categories/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def category_details(id, **kwargs):
-        category = Category.query.filter_by(id=id).first()
-        if not category:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def category_details(user, id, **kwargs):
+        if not user.admin:
+            return {}, 403
+        category = Category.query.get_or_404(id)
 
         if request.method == 'DELETE':
             category.delete()
@@ -539,7 +588,6 @@ def create_app(config_name):
             response.status_code = 200
             return response
         else:
-            # GET
             response = jsonify({
                 'id': category.id,
                 'name': category.name,
@@ -604,7 +652,7 @@ def create_app(config_name):
             token = jwt.encode(
                 payload={
                     'id': user.id,
-                    'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+                    'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
                     'admin': user.admin
                 },
                 key=app.config['SECRET']
