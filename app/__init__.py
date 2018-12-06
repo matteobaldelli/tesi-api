@@ -323,7 +323,9 @@ def create_app(config_name):
     @app.route('/visits/exams', methods=['POST', 'GET'])
     @token_required
     def exam_group(user):
-        user_id = request.values.get('userId', '')
+        if not user.admin:
+            return {}, 403
+        user_id = request.values.get('userId', user.id)
         visits = Visit.query.filter_by(user_id=user_id)
 
         results = []
