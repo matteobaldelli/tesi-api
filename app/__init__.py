@@ -652,7 +652,7 @@ def create_app(config_name):
             token = jwt.encode(
                 payload={
                     'id': user.id,
-                    'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30),
+                    'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=60),
                     'admin': user.admin
                 },
                 key=app.config['SECRET']
