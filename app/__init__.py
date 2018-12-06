@@ -359,6 +359,8 @@ def create_app(config_name):
     @token_required
     def metric(user):
         if request.method == 'POST':
+            if not user.admin:
+                return {}, 403
             category_id = request.data.get('categoryId', None)
 
             metric = Metric(
@@ -372,7 +374,7 @@ def create_app(config_name):
                 gender=str(request.data['gender']),
             )
             try:
-                category = Category.query.filter_by(id=category_id).first()
+                category = Category.query.get(category_id)
                 metric.category = category
             except:
                 db.session.rollback()
@@ -393,7 +395,6 @@ def create_app(config_name):
             response.status_code = 201
             return response
         else:
-            # GET
             gender = request.values.get('gender', None)
             if gender is None:
                 metrics = Metric.get_all()
@@ -421,11 +422,11 @@ def create_app(config_name):
             return response
 
     @app.route('/metrics/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def metric_details(id, **kwargs):
-        metric = Metric.query.filter_by(id=id).first()
-        if not metric:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+    @token_required
+    def metric_details(user, id, **kwargs):
+        if not user.admin:
+            return {}, 403
+        metric = Metric.query.get_or_404(id)
 
         if request.method == 'DELETE':
             metric.delete()
@@ -459,7 +460,6 @@ def create_app(config_name):
             response.status_code = 200
             return response
         else:
-            # GET
             response = jsonify({
                 'id': metric.id,
                 'name': metric.name,
