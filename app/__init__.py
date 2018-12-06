@@ -86,6 +86,8 @@ def create_app(config_name):
 
             exam = Exam(value=value, metric=metric, visit=visit)
             exam.save()
+            visit.date_modified = exam.date_modified
+            visit.save()
             response = jsonify({
                 'id': exam.id,
                 'value': exam.value,
@@ -111,7 +113,7 @@ def create_app(config_name):
                 if not user.admin:
                     visit = visit.filter_by(user=user)
                 visit = visit.first()
-                exams = Exam.query.filter_by(visit=visit)
+                exams = Exam.query.filter_by(visit=visit).order_by(Exam.metric_id)
             results = []
             for exam in exams:
                 obj = {
@@ -140,6 +142,9 @@ def create_app(config_name):
                 abort(404)
 
         if request.method == 'DELETE':
+            visit = exam.visit
+            visit.date_modified = datetime.datetime.now()
+            visit.save()
             exam.delete()
             return {
                        "message": "exam {} deleted successfully".format(exam.id)
@@ -161,6 +166,9 @@ def create_app(config_name):
                 'metricId': exam.metric.id,
                 'visitId': exam.visit.id
             })
+            visit = exam.visit
+            visit.date_modified = exam.date_modified
+            visit.save()
             response.status_code = 200
             return response
         else:
