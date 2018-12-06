@@ -279,11 +279,14 @@ def create_app(config_name):
             return response
 
     @app.route('/visits/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def visit_details(id, **kwargs):
-        visit = Visit.query.filter_by(id=id).first()
+    @token_required
+    def visit_details(user, id, **kwargs):
+        visit = Visit.query.filter_by(id=id)
+        if not user.admin:
+            visit = visit.filter_by(user=user)
+        visit = visit.first()
         if not visit:
-            # Raise an HTTPException with a 404 not found status code
-            abort(404)
+            return {}, 404
 
         if request.method == 'DELETE':
             visit.delete()
