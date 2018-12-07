@@ -334,7 +334,7 @@ def create_app(config_name):
         if not user.admin:
             return {}, 403
         user_id = request.values.get('userId', user.id)
-        visits = Visit.query.filter_by(user_id=user_id)
+        visits = Visit.query.filter_by(user_id=user_id).order_by(Visit.date_modified)
 
         results = []
         for visit in visits:
