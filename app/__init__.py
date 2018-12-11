@@ -608,19 +608,26 @@ def create_app(config_name):
         if request.method == 'POST':
             try:
                 username = request.json['username']
+                email = request.json['email']
                 password = request.json['password']
                 gender = request.json['gender']
                 birth_date = request.json['birthDate']
             except BadRequest:
                 return {}, 400
 
+            username = username.lower()
+            email = email.lower()
+
             if User.query.filter_by(username=username).first() is not None:
                 return {}, 400
-            user = User(username=username.lower(), gender=gender, birth_date=birth_date)
+            if User.query.filter_by(email=email).first() is not None:
+                return {}, 400
+            user = User(username=username, gender=gender, birth_date=birth_date, email=email)
             user.hash_password(password)
             user.save()
             return jsonify({
                 'username': user.username,
+                'email': user.email,
                 'gender': user.gender,
                 'birthDate': user.birth_date,
                 'dateCreated': user.date_created,
