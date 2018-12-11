@@ -71,7 +71,8 @@ class Visit(db.Model):
 class User(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(32), index=True)
+    username = db.Column(db.String(32), unique=True)
+    email = db.Column(db.String(32), unique=True)
     password_hash = db.Column(db.String(128))
     gender = db.Column(db.String(255))
     birth_date = db.Column(db.DateTime)
@@ -83,8 +84,9 @@ class User(db.Model):
         onupdate=db.func.current_timestamp()
     )
 
-    def __init__(self, username, gender, birth_date):
+    def __init__(self, username, email, gender, birth_date):
         self.username = username
+        self.email = email
         self.gender = gender
         self.birth_date = birth_date
 
