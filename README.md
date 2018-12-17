@@ -11,6 +11,7 @@ To run this project you must have installed these programs:
 * [python](https://www.python.org/)
 * [flask](https://github.com/pallets/flask)
 * [virtualenv](https://github.com/pypa/virtualenv)
+* [postgresql](https://github.com/postgres/postgres)
 
 ### Installing and serve
 
