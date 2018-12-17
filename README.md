@@ -40,13 +40,6 @@ python manage.py db upgrade
 flask run
 ```
 
-## Built With
-
-* [Angular](https://github.com/angular/angular)
-* [Bootstrap](https://github.com/twbs/bootstrap)
-* [hGraph](https://github.com/goinvo/hGraph)
-* [ng2-nouislider](https://github.com/tb/ng2-nouislider)
-
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details
