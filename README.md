@@ -36,7 +36,6 @@ after create a .env file go back to the console
 ```
 source .env
 pip install -r requirements.txt
-python manage.py db init
 python manage.py db upgrade
 flask run
 ```
